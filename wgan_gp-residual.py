@@ -7,10 +7,7 @@ from pathlib import Path
 import os
 import torchvision.transforms as tf
 
-### version 1
-from net import NetG
-### version 2
-###from transformer_net import TransformerNet
+from transformer_net import TransformerNet
 from net import NetD
 
 from utils import init_weight
@@ -65,16 +62,8 @@ class WGAN_GP():
         
 
         self.current_ep = 0
-        #version 1
-        self.netG = NetG(
-            z_dim=self.z_dim,
-            out_ch=3,
-            norm_layer=LayerNorm2d,
-            final_activation=torch.tanh,
-        )
         
-        ### version 2
-        ###self.netG = TransformerNet()
+        self.netG = TransformerNet()
         self.netD = NetD(3, norm_layer=LayerNorm2d)
 
         self.netG.apply(init_weight)
@@ -109,12 +98,8 @@ class WGAN_GP():
         self.optG.step()
         return loss.item()
     def sample_noise(self):
-        #### version 1
-         return torch.randn(self.batch_size, self.z_dim, 1, 1).to(
-             self.device
-        )
-        #### version 2 
-        ###return torch.randn(self.batch_size, 3,64,64).to(self.device)
+        
+        return torch.randn(self.batch_size, 3,64,64).to(self.device)
     
     def critic_step(self, data):
         self.netG.eval()
@@ -129,7 +114,6 @@ class WGAN_GP():
 
         real_logits = self.netD(real_images)
         fake_logits = self.netD(fake_images)
-        #   print(real_logits.shape,fake_logits.shape )
         w_gp=10
         gradient_penalty = w_gp * self._compute_gp(
             real_images, fake_images
