@@ -27,7 +27,7 @@ def compute_gp(discriminator,real_data, fake_data):
         gradients = gradients.view(batch_size, -1)
         grad_norm = gradients.norm(2, 1)
         return torch.mean((grad_norm - 1) ** 2)
-def adv_loss(discriminator,real,fake):
+def adv_loss_d(discriminator,real,fake):
     real_logits = discriminator(real)[0]
     fake_logits =discriminator(fake)[0]
     w_gp=10
@@ -36,6 +36,11 @@ def adv_loss(discriminator,real,fake):
     loss_c = fake_logits.mean() - real_logits.mean()
     loss = loss_c + gradient_penalty
     #return loss, gradient_penalty,loss_c
+    return loss
+def adv_loss_g(discriminator,real,fake):
+    fake_logits =discriminator(fake)[0]
+
+    loss = -fake_logits.mean()
     return loss
 import numpy as np
 
