@@ -118,109 +118,43 @@ class PreProcessData():
                         self.train_labels.append(idx - 1)
                         self.train_images_t.append(file_path_t)
                         self.train_angles_g.append([h_angle_g, v_angle_g])
-                    else:
-                        self.test_images.append(file_path)
-                        self.test_angles_r.append([h_angle_r, v_angle_r])
-                        self.test_labels.append(idx - 1)
-                        self.test_images_t.append(file_path_t)
-                        self.test_angles_g.append([h_angle_g, v_angle_g])
-        def training_data():
+            if idx > self.ids :
+                self.test_images.append(file_path)
+                self.test_angles_r.append([h_angle_r, v_angle_r])
+                self.test_labels.append(idx - 1)
+                self.test_images_t.append(file_path_t)
+                self.test_angles_g.append([h_angle_g, v_angle_g])
+    def training_data(self):
             return self.train_images,self.train_angles_r,self.train_labels,self.train_images_t,self.train_angles_g
-        def testing_data():
+    def testing_data(self):
             return self.test_images,self.test_angles_r,self.test_labels,self.test_images_t,self.test_angles_g
 class MyDataset(torch.utils.data.Dataset):
-    def __init__(self, dir_path, transform=None):
+    def __init__(self, images,angles_r,labels,images_t,angles_g, transform=None):
         super().__init__()
         self.transform = transform
-        self.ids=50
-        self.data_path = dir_path
-        self.file_names = [f for f in os.listdir(self.data_path)
-                      if f.endswith('.jpg')]
-        self.file_dict = dict()
-        for f_name in self.file_names:
-            fields = f_name.split('.')[0].split('_')
-            identity = fields[0]
-            head_pose = fields[2]
-            side = fields[-1]
-            key = '_'.join([identity, head_pose, side])
-            if key not in self.file_dict.keys():
-                self.file_dict[key] = []
-                self.file_dict[key].append(f_name)
-            else:
-                self.file_dict[key].append(f_name)
-        self.train_images = []
-        self.train_angles_r = []
-        self.train_labels = []
-        self.train_images_t = []
-        self.train_angles_g = []
-
-        self.test_images = []
-        self.test_angles_r = []
-        self.test_labels = []
-        self.test_images_t = []
-        self.test_angles_g = []
-        self.preprocess()
-    def preprocess(self):
-
-        for key in self.file_dict.keys():
-
-            if len(self.file_dict[key]) == 1:
-                continue
-
-            idx = int(key.split('_')[0])
-            flip = 1
-            if key.split('_')[-1] == 'R':
-                flip = -1
-
-            for f_r in self.file_dict[key]:
-
-                file_path = os.path.join(self.data_path, f_r)
-
-                h_angle_r = flip * float(
-                    f_r.split('_')[-2].split('H')[0]) / 15.0
-                    
-                v_angle_r = float(
-                    f_r.split('_')[-3].split('V')[0]) / 10.0
-                    
-
-                for f_g in self.file_dict[key]:
-
-                    file_path_t = os.path.join(self.data_path, f_g)
-
-                    h_angle_g = flip * float(
-                        f_g.split('_')[-2].split('H')[0]) / 15.0
-                        
-                    v_angle_g = float(
-                        f_g.split('_')[-3].split('V')[0]) / 10.0
-                        
-
-                    if idx <= self.ids:
-                        self.train_images.append(file_path)
-                        self.train_angles_r.append([h_angle_r, v_angle_r])
-                        self.train_labels.append(idx - 1)
-                        self.train_images_t.append(file_path_t)
-                        self.train_angles_g.append([h_angle_g, v_angle_g])
-                    else:
-                        self.test_images.append(file_path)
-                        self.test_angles_r.append([h_angle_r, v_angle_r])
-                        self.test_labels.append(idx - 1)
-                        self.test_images_t.append(file_path_t)
-                        self.test_angles_g.append([h_angle_g, v_angle_g])
-
+        self.images=images
+        self.angles_r=angles_r
+        self.labels=labels
+        self.images_t=images_t
+        self.angles_g=angles_g
     def __getitem__(self, index):
         return (
-            self.transform(Image.open(self.train_images[index])),
-                torch.tensor(self.train_angles_r[index]),
-                self.train_labels[index],
-            self.transform(Image.open(self.train_images_t[index])),
-                torch.tensor(self.train_angles_g[index]))
+            self.transform(Image.open(self.images[index])),
+                torch.tensor(self.angles_r[index]),
+                self.labels[index],
+            self.transform(Image.open(self.images_t[index])),
+                torch.tensor(self.angles_g[index]))
         
     def __len__(self):
-        return len(self.train_images)
-
+        return len(self.images)
+data=PreProcessData(config.data_path)
 transform=tf.Compose([tf.ToTensor(),tf.Resize((64,64),antialias=True)])
-dataset=MyDataset(dir_path=config.data_path,transform=transform)
-train_loader = torch.utils.data.DataLoader(dataset, batch_size=config.batch_size, shuffle=True)
+train_dataset=MyDataset(*data.training_data(),transform=transform)
+test_dataset=MyDataset(*data.testing_data(),transform=transform)
+
+#dataset=MyDataset(dir_path=config.data_path,transform=transform)
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False)
 device='cuda' if torch.cuda.is_available() else 'cpu'
 
 
@@ -331,9 +265,16 @@ for epoch in loop:
         metrics={'loss_d':l_d,'loss_g':l_g}
         experiment.log_metrics(metrics, epoch=epoch)
     if epoch%config.model_save_freq==0:
-        if config.use_comet is not None:
-            log_model(experiment,generator,"generator")
-            log_model(experiment,discriminator,"discriminator")
-        torch.save(generator, './generator.pth')
-        torch.save(discriminator, './discriminator.pth')
+        # if config.use_comet is not None:
+        #     log_model(experiment,generator,"generator")
+        #     log_model(experiment,discriminator,"discriminator")
+        # torch.save(generator, './generator.pth')
+        # torch.save(discriminator, './discriminator.pth')
+        orig=next(iter(test_loader))[0].to(device)
+        imgs=[orig]
+        for h in [-15,-10,-5,0,5,10,15]:
+                    a=torch.tile(torch.tensor([h/15.,0.]),[32,1])
+                    a=a.to(device)
+                    y=generator(orig,a)
+                    imgs.append(y.detach())
      

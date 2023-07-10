@@ -44,7 +44,8 @@ else:
         angles=torch.tensor([h/15,0.]).unsqueeze(0)
         a=gen(img,angles)
         res.append(a.detach())
-
-output=save_images(res)
+from torchvision.utils import  make_grid
+make_grid(res,nrow=1)
+#output=save_images(res)
 plt.imshow(output)
 plt.show()
