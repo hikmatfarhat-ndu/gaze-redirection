@@ -14,7 +14,7 @@ class LossNetwork(torch.nn.Module):
 
     def __init__(self):
         super(LossNetwork, self).__init__()
-        self.vgg_layers = vgg.vgg19(pretrained=True).features
+        self.vgg_layers = vgg.vgg19(weights=vgg.VGG19_Weights.DEFAULT).features
         self.layer_name_mapping = {
             '3': "relu1",
             '8': "relu2",
