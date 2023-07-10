@@ -1,2 +1,4 @@
 __py*
 debug*
+.comet*
+*.pth
