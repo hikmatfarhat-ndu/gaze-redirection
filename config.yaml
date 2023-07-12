@@ -11,6 +11,7 @@ lambda_gaze: 5
 lambda_recon: 50
 image_save_freq: 10
 model_save_freq: 50
+debug_path: 'debug'
 use_comet: 'online' #'online' or 'offline' or None
 comet_workspace: 'generative-models'
 comet_project: 'gaze-estimation'
