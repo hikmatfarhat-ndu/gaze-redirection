@@ -69,23 +69,20 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=config.test_b
 device='cuda' if torch.cuda.is_available() else 'cpu'
 
 
-# if os.path.isfile('discriminator.pth'):
-#     discriminator=torch.load('discriminator.pth')
-#     print('loaded discriminator')
-# else:
-#     discriminator=Discriminator()
-#     print('created discriminator')
-# if os.path.isfile('generator.pth'):
-#     generator=torch.load('generator.pth')
-#     print('loaded generator')
-# else:
-#     generator=Generator2()
-#     print('created generator')
+if os.path.isfile('discriminator.pth'):
+    discriminator=torch.load('discriminator.pth')
+    print('loaded discriminator')
+else:
+    discriminator=Discriminator()
+    print('created discriminator')
+if os.path.isfile('generator.pth'):
+    generator=torch.load('generator.pth')
+    print('loaded generator')
+else:
+    generator=Generator2()
+    print('created generator')
 
-generator=Generator2()
-discriminator=Discriminator()
-#generator=generator.to(device)
-#discriminator=discriminator.to(device)
+
 LR=config.lr
 beta1=config.beta1
 beta2=config.beta2
