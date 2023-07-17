@@ -10,7 +10,8 @@ from torchvision.utils import  make_grid,save_image
 from PIL import Image
 import torch.autograd as autograd
 from networks import Discriminator,Generator2
-from loss_network import LossNetwork
+from loss_network import LossNetwork,LossNetwork2
+
 from loss import content_style_loss,adv_loss_d,adv_loss_g,gaze_loss_d,gaze_loss_g,reconstruction_loss
 from PIL import Image
 import numpy as np
@@ -69,13 +70,13 @@ test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=config.test_b
 device='cuda' if torch.cuda.is_available() else 'cpu'
 
 
-if os.path.isfile('discriminator.pth'):
+if os.path.isfile('discriminator.pth') and config.resume_training:
     discriminator=torch.load('discriminator.pth')
     print('loaded discriminator')
 else:
     discriminator=Discriminator()
     print('created discriminator')
-if os.path.isfile('generator.pth'):
+if os.path.isfile('generator.pth') and config.resume_training:
     generator=torch.load('generator.pth')
     print('loaded generator')
 else:
@@ -89,7 +90,8 @@ beta2=config.beta2
 optimizer_g = torch.optim.Adam(generator.parameters(), LR,betas=(beta1, beta2))
 optimizer_d = torch.optim.Adam(discriminator.parameters(), LR,betas=(beta1, beta2))
 
-loss_network=LossNetwork()
+loss_network=LossNetwork2()
+#loss_network=LossNetwork()
 #loss_network=loss_network.to(device)
 from lightning.fabric import Fabric
 fabric=Fabric(accelerator='cuda',devices=1,precision="bf16-mixed")
@@ -104,12 +106,13 @@ def generator_step(generator,discriminator,loss_network,batch):
     discriminator.eval()
     x_g=generator(imgs_r,angles_g)
     x_recon=generator(x_g,angles_r)
-    loss_adv=adv_loss_g(discriminator,imgs_r,x_g)
-    loss2=content_style_loss(loss_network,x_g,imgs_t)
-    loss_p=loss2[0]+loss2[1]
-    loss_gg=gaze_loss_g(discriminator,x_g,angles_g)
-    loss_recon=reconstruction_loss(generator,imgs_r,x_recon)
-    loss=loss_adv+config.lambda_p*loss_p+config.lambda_gaze*loss_gg+config.lambda_recon*loss_recon
+    with fabric.autocast():
+        loss_adv=adv_loss_g(discriminator,imgs_r,x_g)
+        loss2=content_style_loss(loss_network,x_g,imgs_t)
+        loss_p=loss2[0]+loss2[1]
+        loss_gg=gaze_loss_g(discriminator,x_g,angles_g)
+        loss_recon=reconstruction_loss(generator,imgs_r,x_recon)
+        loss=loss_adv+config.lambda_p*loss_p+config.lambda_gaze*loss_gg+config.lambda_recon*loss_recon
     #loss.backward()
     fabric.backward(loss)
     optimizer_g.step()
@@ -123,9 +126,10 @@ def discriminator_step(generator,discriminator,batch):
     generator.eval()
     discriminator.train()
     x_g=generator(imgs_r,angles_g)
-    loss1=adv_loss_d(discriminator,imgs_r,x_g)
-    loss2=gaze_loss_d(discriminator,imgs_r,angles_r)
-    loss=loss1+config.lambda_gaze*loss2
+    with fabric.autocast():
+        loss1=adv_loss_d(discriminator,imgs_r,x_g)
+        loss2=gaze_loss_d(discriminator,imgs_r,angles_r)
+        loss=loss1+config.lambda_gaze*loss2
     #loss.backward()
     fabric.backward(loss)
     optimizer_d.step()

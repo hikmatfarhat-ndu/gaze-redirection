@@ -62,6 +62,7 @@ def content_style_loss(loss_network,x,y):
     with torch.no_grad():
         xc = x.detach()
         features_y = loss_network(y)
+        dummy=18
         features_xc = loss_network(xc)
         f_xc_c = features_xc[2].detach()
         content_loss = mse_loss(features_y[2], f_xc_c)

@@ -4,7 +4,9 @@ A PyTorch implementation of this [paper](https://arxiv.org/abs/1903.12530). It w
 
 ### Training
  
-Use `train.py` for training where the parameters are taken from `config.yaml`
+Use `train.py` for training where the parameters are taken from `config.yaml`.
+
+Another version of `train.py`, `train-fabric.py`, uses lightning Fabric with `bf16-mixed` precision and accomplishes about 25% speedup on NVIDIA RTX3070.
 
 ### Testing
 

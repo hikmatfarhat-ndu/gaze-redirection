@@ -30,3 +30,23 @@ class LossNetwork(torch.nn.Module):
             if name in self.layer_name_mapping:
                 output[self.layer_name_mapping[name]] = x
         return LossOutput(**output)
+class LossNetwork2(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        #self.all_layers=vgg.vgg16(weights=vgg.VGG16_Weights.DEFAULT).features
+        self.model=vgg.vgg16(weights=vgg.VGG16_Weights.DEFAULT)
+        self.all_layers=[]
+        mods=self.model.modules()
+        for idx,m in enumerate(mods):
+            if idx!=0 and not isinstance(m,torch.nn.Sequential) and not isinstance(m,torch.nn.AdaptiveAvgPool2d):
+                self.all_layers.append(m)
+        self.needed_layers=[3,8,15,22]
+    def forward(self,x):
+        output=[]
+        for idx,layer in enumerate(self.all_layers):
+            x=layer(x)
+            if idx in self.needed_layers:
+                output.append(x)
+            if idx==22:
+                break
+        return output
