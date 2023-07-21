@@ -180,7 +180,9 @@ for epoch in range(config.epochs):
         if config.use_comet is not None:
             log_model(experiment,generator,"generator")
             log_model(experiment,discriminator,"discriminator")
-        torch.save(generator, './generator.pth')
-        torch.save(discriminator, './discriminator.pth')
+        # torch.save(generator, './generator.pth')
+        # torch.save(discriminator, './discriminator.pth')
+        torch.save(generator.state_dict(), './generator.pth')
+        torch.save(discriminator.state_dict(), './discriminator.pth')
         
         

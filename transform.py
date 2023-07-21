@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import argparse
-
+from networks import Discriminator,Generator2
 from torchvision import transforms as tf
 from torchvision.utils import  make_grid,save_image
 from PIL import Image
@@ -31,22 +31,18 @@ transform=tf.Compose([tf.ToTensor(),tf.Resize((64,64),antialias=True)])
 img=Image.open(args.input)
 img=transform(img).unsqueeze(0)
 
-#img=img.to(torch.bfloat16)
-gen=torch.load(args.generator).to('cpu')
-#gen=torch.load(args.generator)
-#img=img.cuda()    
+gen=Generator2()
+gen.load_state_dict(torch.load(args.generator))
 gen.eval()
 res=[img]
 if args.angles is not  None:
     angles=list(map(float,args.angles))
     angles=torch.tensor(angles).unsqueeze(0)
-#    angles=angles.cuda()
     a=gen(img,angles)
     res.append(a.detach())
 else:
     
     for h in [-15,-10,-5,0,5,10,15]:
-        #angles=torch.tensor([h/15,0.],dtype=torch.bfloat16).unsqueeze(0)
         angles=torch.tensor([h/15,0.]).unsqueeze(0)
         a=gen(img,angles)
         a=a.detach()
